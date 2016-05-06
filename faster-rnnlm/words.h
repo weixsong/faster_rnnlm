@@ -10,10 +10,14 @@
 
 #include "faster-rnnlm/settings.h"
 
+/*
+* IMPORTANT: faster_rnnlm is supposed to be used in Linux, because linux support Unicode by char*,
+* but in Windows char* doestn't support Unicode, so if you want to use it in Windows, you need to change lots of code to wchar_t*
+*/
 
 class Vocabulary {
  public:
-  static const WordIndex kWordOOV = -1;
+  static const WordIndex kWordOOV = -1;  // index of word Out-Of-Vocabulary
 
   Vocabulary();
 
@@ -42,15 +46,16 @@ class Vocabulary {
   // Adds a few fake words if that is needed to build a full k-ary tree
   void AdjustSizeForSoftmaxTree(int arity);
 
+  // word structure
   struct Word {
     int64_t freq;
     char *word;
   };
 
  private:
-  class HashImpl;
+  class HashImpl;  // inner class, used to compute hash value of Word, a very simple hash implement
 
-  std::vector<Word> words_;
+  std::vector<Word> words_;  // use vector index as word hash value, then could find word, take it as a hash map, word hash --> word 
   HashImpl* hash_impl_;
 
   // Adds a word to the vocabulary with zero frequency; returns word index
@@ -60,7 +65,7 @@ class Vocabulary {
 };
 
 
-// Reads space-serated words from a file
+// Reads space-separated words from a file
 //  - adds </s> to end of each line
 //  - empty lines are skipped
 class WordReader {
@@ -91,12 +96,12 @@ class WordReader {
 
 
 // SentenceReader class represents a corpora as a sequence of sentences,
-// where each sentence is an array of word indices
+// where each output sentence is an array of word indices
 class SentenceReader : public WordReader {
  public:
   SentenceReader(const Vocabulary& vocab, const std::string& filename, bool reverse, bool auto_insert_unk);
 
-  // Tries to read next sentence; returns false iff eof or end-of-chunk
+  // Tries to read next sentence; returns false if eof or end-of-chunk
   bool Read();
 
   // Returns pointer to the last read sentence
@@ -108,7 +113,7 @@ class SentenceReader : public WordReader {
   // Returns number of sentences read so far
   int64_t sentence_id() const { return sentence_id_; }
 
-  // Returns true iff the last line has any OOV words, that were mapped to unk_word
+  // Returns true if the last line has any OOV words, that were mapped to unk_word
   bool HasOOVWords() const { return oov_occured_; }
 
  private:
@@ -117,7 +122,7 @@ class SentenceReader : public WordReader {
 
   // Reads a word and set its index in the vocabulary
   // if the word is not found, set kWordOOV
-  // return false iff EOF
+  // return false if EOF
   bool ReadWordId(WordIndex* wid);
 
   int sentence_length_;
